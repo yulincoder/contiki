@@ -142,6 +142,10 @@ import org.contikios.cooja.plugins.SimInformation;
 import org.contikios.cooja.util.ExecuteJAR;
 import org.contikios.cooja.util.ScnObservable;
 
+//tete_begin
+import org.contikios.cooja.mspmote.plugins.MspCLI;
+//tete_end
+
 /**
  * Main file of COOJA Simulator. Typically contains a visualizer for the
  * simulator, but can also be started without visualizer.
@@ -159,6 +163,11 @@ public class Cooja extends Observable {
   private static final long serialVersionUID = 1L;
   private static Logger logger = Logger.getLogger(Cooja.class);
 
+  //tete_begin
+  // 如果该标志为true,说明从脚本来启动MspCLI
+  public static boolean flag_ScriptLaunchMspCLI = false;
+  public static String mspcilCommandFromScript = null;
+  //tete_end
   /**
    * External tools configuration.
    */
@@ -414,7 +423,7 @@ public class Cooja extends Observable {
         currentProjects.add(new COOJAProject(projectDir));
       }
     }
-    
+
     //Scan for projects
     String searchProjectDirs = getExternalToolsSetting("PATH_APPSEARCH", null);
     if (searchProjectDirs != null && searchProjectDirs.length() > 0) {
@@ -1037,7 +1046,15 @@ public class Cooja extends Observable {
             hasSimPlugins = false;
             toolsMenu.addSeparator();
           }
-
+        //tete_begin
+          /*
+           *   之所以在这里将pluginClasses与cooja传递给ScriptRunner是因为我只能确保
+           * 在这里这两个变量是有效的,而不是null.
+           *    pluginClasses的作用不言而喻, 而cooja中可以获得仿真的mote以用来启动指定mote的CLI
+           */
+          ScriptRunner.pluginClasses = (Object)pluginClasses;
+          ScriptRunner.cooja = cooja;
+          //tete_end
           toolsMenu.add(createMotePluginsSubmenu(pluginClass));
         }
       }
@@ -1789,11 +1806,14 @@ public class Cooja extends Observable {
     return null;
   }
 
-  public Plugin tryStartPlugin(final Class<? extends Plugin> pluginClass,
-      final Cooja argGUI, final Simulation argSimulation, final Mote argMote) {
-    return tryStartPlugin(pluginClass, argGUI, argSimulation, argMote, true);
-  }
-
+  //tete_begin
+  //这个函数我只改变了参数的类型(改为Object), 并且原来的类型我忘了.
+  //这是一个历史遗留问题,由于我一开始类路径设置错误给逼的.
+  public Plugin tryStartPlugin(Object pluginClass,
+	      final Cooja argGUI, final Simulation argSimulation, final Object argMote) {
+	    return tryStartPlugin((Class<? extends Plugin>)pluginClass, argGUI, argSimulation, (Mote)argMote, true);
+}
+  //tete_end
   public Plugin startPlugin(final Class<? extends Plugin> pluginClass,
       final Cooja argGUI, final Simulation argSimulation, final Mote argMote)
   throws PluginConstructionException
@@ -1828,9 +1848,17 @@ public class Cooja extends Observable {
 
     try {
       if (pluginType == PluginType.MOTE_PLUGIN) {
-        if (argGUI == null) {
-          throw new PluginConstructionException("No GUI argument for mote plugin");
-        }
+    	//tete_begin
+    	  if(!flag_ScriptLaunchMspCLI && argGUI == null){
+    		  throw new PluginConstructionException("No GUI argument for mote plugin");
+    	  }
+
+// 原来的代码
+//        if (argGUI == null) {
+//          throw new PluginConstructionException("No GUI argument for mote plugin");
+//        }
+    	//tete_end
+
         if (argSimulation == null) {
           throw new PluginConstructionException("No simulation argument for mote plugin");
         }
@@ -1841,6 +1869,20 @@ public class Cooja extends Observable {
         plugin =
           pluginClass.getConstructor(new Class[] { Mote.class, Simulation.class, Cooja.class })
           .newInstance(argMote, argSimulation, argGUI);
+
+        //tete_begin
+        if("class org.contikios.cooja.mspmote.plugins.MspCLI".equals(plugin.getClass().toString())){
+           if(flag_ScriptLaunchMspCLI){
+        	// flag_ScriptLaunchMspCLI在本方法中还需使用一次,因此不在这里进行重置
+
+          System.out.println("Log: MspCLI 准备加载");
+        	((MspCLI) plugin).flag_ScriptLaunchMspCLI = flag_ScriptLaunchMspCLI;
+          System.out.println("Log: MspCLI 加载成功");
+           	System.out.println("Log1: " + plugin.getClass());
+            ((MspCLI) plugin).execCmdFromScript(mspcilCommandFromScript);
+           }
+        }
+        //tete_end
 
       } else if (pluginType == PluginType.SIM_PLUGIN || pluginType == PluginType.SIM_STANDARD_PLUGIN
     		  || pluginType == PluginType.SIM_CONTROL_PLUGIN) {
@@ -1886,10 +1928,26 @@ public class Cooja extends Observable {
     startedPlugins.add(plugin);
     updateGUIComponentState();
 
-    // Show plugin if visualizer type
+
+    //tete_begin
+//  修改后的代码
+    System.out.println("Log: " + plugin.getClass().toString() + " --- " + flag_ScriptLaunchMspCLI);
     if (activate && plugin.getCooja() != null) {
-      cooja.showPlugin(plugin);
+    	if("class org.contikios.cooja.mspmote.plugins.MspCLI".equals(plugin.getClass().toString())
+    			&& flag_ScriptLaunchMspCLI)
+    		flag_ScriptLaunchMspCLI = false;
+    	else
+    		cooja.showPlugin(plugin);
     }
+
+
+//原代码
+    // Show plugin if visualizer type
+//    if (activate && plugin.getCooja() != null) {
+//      cooja.showPlugin(plugin);
+//    }
+
+    //tete_end
 
     return plugin;
   }
@@ -1925,7 +1983,7 @@ public class Cooja extends Observable {
     try {
       if (pluginType == PluginType.COOJA_PLUGIN || pluginType == PluginType.COOJA_STANDARD_PLUGIN) {
         pluginClass.getConstructor(new Class[] { Cooja.class });
-      } else if (pluginType == PluginType.SIM_PLUGIN || pluginType == PluginType.SIM_STANDARD_PLUGIN 
+      } else if (pluginType == PluginType.SIM_PLUGIN || pluginType == PluginType.SIM_STANDARD_PLUGIN
     		  || pluginType == PluginType.SIM_CONTROL_PLUGIN) {
         pluginClass.getConstructor(new Class[] { Simulation.class, Cooja.class });
       } else if (pluginType == PluginType.MOTE_PLUGIN) {
@@ -2688,7 +2746,7 @@ public class Cooja extends Observable {
   public void doQuit(boolean askForConfirmation) {
     doQuit(askForConfirmation, 0);
   }
-  
+
   public void doQuit(boolean askForConfirmation, int exitCode) {
     if (isVisualizedInApplet()) {
       return;
@@ -3132,8 +3190,7 @@ public class Cooja extends Observable {
   public static void main(String[] args) {
     String logConfigFile = null;
     Long randomSeed = null;
-    
-    
+
     for (String element : args) {
       if (element.startsWith("-log4j=")) {
         String arg = element.substring("-log4j=".length());
@@ -3191,10 +3248,10 @@ public class Cooja extends Observable {
           Cooja.externalToolsUserSettingsFileReadOnly = true;
         }
       }
-      
+
       if (element.startsWith("-random-seed=")) {
         String arg = element.substring("-random-seed=".length());
-        try {          
+        try {
           randomSeed =  Long.valueOf(arg);
         } catch (Exception e) {
           logger.error("Failed to convert \"" + arg +"\" to an integer.");
@@ -3229,7 +3286,7 @@ public class Cooja extends Observable {
       if (sim == null) {
         System.exit(1);
       }
-      
+
 
     } else if (args.length > 0 && args[0].startsWith("-nogui=")) {
 
@@ -3276,7 +3333,7 @@ public class Cooja extends Observable {
       }
 
 
-      
+
     } else if (args.length > 0 && args[0].startsWith("-applet")) {
 
       String tmpWebPath=null, tmpBuildPath=null, tmpEsbFirmware=null, tmpSkyFirmware=null;
@@ -3428,7 +3485,7 @@ public class Cooja extends Observable {
           Collection<Element> config = ((Element) element).getChildren();
           newSim = new Simulation(this);
           System.gc();
-          
+
           boolean createdOK = newSim.setConfigXML(config, isVisualized(), quick, manualRandomSeed);
           if (!createdOK) {
             logger.info("Simulation not loaded");
@@ -3643,7 +3700,7 @@ public class Cooja extends Observable {
    */
   public boolean setPluginsConfigXML(Collection<Element> configXML,
       Simulation simulation, boolean visAvailable, boolean quick) {
-      
+
     for (final Element pluginElement : configXML.toArray(new Element[0])) {
       if (pluginElement.getName().equals("plugin")) {
 
@@ -4177,7 +4234,7 @@ public class Cooja extends Observable {
 	  {"[COOJA_DIR]","PATH_COOJA","/tools/cooja"},
 	  {"[APPS_DIR]","PATH_APPS","/tools/cooja/apps"}
   };
-  
+
   private File createContikiRelativePath(File file) {
     try {
     	int elem = PATH_IDENTIFIER.length;
@@ -4186,32 +4243,32 @@ public class Cooja extends Observable {
     	int match = -1;
     	int mlength = 0;
     	String fileCanonical = file.getCanonicalPath();
-      
+
     	//No so nice, but goes along with GUI.getExternalToolsSetting
     	String defp = Cooja.getExternalToolsSetting("PATH_CONTIKI", null);
-    	
-    	
+
+
 		for(int i = 0; i < elem; i++){
-			path[i] = new File(Cooja.getExternalToolsSetting(PATH_IDENTIFIER[i][1], defp + PATH_IDENTIFIER[i][2]));			
+			path[i] = new File(Cooja.getExternalToolsSetting(PATH_IDENTIFIER[i][1], defp + PATH_IDENTIFIER[i][2]));
 			canonicals[i] = path[i].getCanonicalPath();
 			if (fileCanonical.startsWith(canonicals[i])){
 				if(mlength < canonicals[i].length()){
 					mlength = canonicals[i].length();
 					match = i;
 				}
- 
+
 	    	}
 		}
-      
+
 	    if(match == -1) return null;
 
 
 	    /* Replace Contiki's canonical path with Contiki identifier */
         String portablePath = fileCanonical.replaceFirst(
-          java.util.regex.Matcher.quoteReplacement(canonicals[match]), 
+          java.util.regex.Matcher.quoteReplacement(canonicals[match]),
           java.util.regex.Matcher.quoteReplacement(PATH_IDENTIFIER[match][0]));
         File portable = new File(portablePath);
-      
+
         /* Verify conversion */
         File verify = restoreContikiRelativePath(portable);
         if (verify == null || !verify.exists()) {
@@ -4225,43 +4282,43 @@ public class Cooja extends Observable {
       return null;
     }
   }
-  
-  
+
+
   private File restoreContikiRelativePath(File portable) {
   	int elem = PATH_IDENTIFIER.length;
   	File path = null;
 	String canonical = null;
-	
+
     try {
-    	    	
+
     	String portablePath = portable.getPath();
-    	
+
         int i = 0;
         //logger.info("PPATH: " + portablePath);
-        
+
     	for(; i < elem; i++){
     		if (portablePath.startsWith(PATH_IDENTIFIER[i][0])) break;
-    		
+
     	}
-    	
-    	
+
+
     	if(i == elem) return null;
     	//logger.info("Found: " + PATH_IDENTIFIER[i][0]);
-    	
+
     	//No so nice, but goes along with GUI.getExternalToolsSetting
     	String defp = Cooja.getExternalToolsSetting("PATH_CONTIKI", null);
     	path = new File(Cooja.getExternalToolsSetting(PATH_IDENTIFIER[i][1], defp + PATH_IDENTIFIER[i][2]));
-    	
+
     	//logger.info("Config: " + PATH_IDENTIFIER[i][1] + ", " + defp + PATH_IDENTIFIER[i][2] + " = " + path.toString());
 		canonical = path.getCanonicalPath();
-    	
-		
+
+
     	File absolute = new File(portablePath.replace(PATH_IDENTIFIER[i][0], canonical));
 		if(!absolute.exists()){
 			logger.warn("Replaced " + portable  + " with " + absolute.toString() + " (default: "+ defp + PATH_IDENTIFIER[i][2] +"), but could not find it. This does not have to be an error, as the file might be created later.");
 		}
-    	     
-      
+
+
     	return absolute;
     } catch (IOException e) {
     	return null;
@@ -4736,4 +4793,3 @@ public class Cooja extends Observable {
   };
 
 }
-

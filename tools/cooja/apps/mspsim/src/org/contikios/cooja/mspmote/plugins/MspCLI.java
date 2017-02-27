@@ -73,18 +73,26 @@ public class MspCLI extends VisPlugin implements MotePlugin, HasQuickHelp {
   private String[] history = new String[50];
   private int historyPos = 0;
   private int historyCount = 0;
+  
+  //tete_begin
+  private CommandContext globalCommandContext = null;
+  private Container globalPanel = null;
+  public static boolean flag_ScriptLaunchMspCLI = false;
+  //tete_end
 
   public MspCLI(Mote mote, Simulation simulationToVisualize, Cooja gui) {
     super("Msp CLI (" + mote.getID() + ')', gui);
+    
     this.mspMote = (MspMote) mote;
 
     final Container panel = getContentPane();
-
+    
     logArea = new JTextArea(4, 20);
     logArea.setTabSize(8);
     logArea.setEditable(false);
     panel.add(new JScrollPane(logArea), BorderLayout.CENTER);
 
+    
     LineListener lineListener = new LineListener() {
       public void lineRead(String line) {
         addCLIData(line);
@@ -92,6 +100,12 @@ public class MspCLI extends VisPlugin implements MotePlugin, HasQuickHelp {
     };
     PrintStream po = new PrintStream(new LineOutputStream(lineListener));
     final CommandContext commandContext = new CommandContext(mspMote.getCLICommandHandler(), null, "", new String[0], 1, null);
+    
+    //tete_begin
+    this.globalCommandContext = commandContext;
+    this.globalPanel = panel;
+    //tete_end
+    
     commandContext.out = po;
     commandContext.err = po;
 
@@ -104,6 +118,7 @@ public class MspCLI extends VisPlugin implements MotePlugin, HasQuickHelp {
     });
     popupMenu.add(clearItem);
     logArea.setComponentPopupMenu(popupMenu);
+  
 
     ActionListener action = new ActionListener() {
       public void actionPerformed(ActionEvent e) {
@@ -183,9 +198,46 @@ public class MspCLI extends VisPlugin implements MotePlugin, HasQuickHelp {
     cliResponseAggregator.start();
 
     panel.add(commandField, BorderLayout.SOUTH);
+    
     setSize(500,500);
   }
 
+  //tete_begin
+  public void sayHi(){
+	  System.out.println("Log2: Hi, I am here.");
+  }
+  //tete_end
+  
+//tete_begin
+  public void execCmdFromScript(String cmd){
+  	 String command = trim(cmd);
+       if (command != null) {
+         try {
+           int previous = historyCount - 1;
+           if (previous < 0) {
+             previous += history.length;
+           }
+           if (!command.equals(history[previous])) {
+             history[historyCount] = command;
+             historyCount = (historyCount + 1) % history.length;
+           }
+           historyPos = historyCount;
+
+           mspMote.executeCLICommand(command, globalCommandContext);
+         } catch (Exception ex) {
+           System.err.println("could not send '" + command + "':");
+           ex.printStackTrace();
+           JOptionPane.showMessageDialog(globalPanel,
+               "could not send '" + command + "':\n"
+               + ex, "ERROR",
+               JOptionPane.ERROR_MESSAGE);
+         }
+       } else {
+         commandField.getToolkit().beep();
+       }
+  }
+//tete_end
+  
   public void closePlugin() {
     cliResponseAggregator.stop();
   }
