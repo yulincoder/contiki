@@ -67,11 +67,12 @@ The COOJA Simulator
         <pathelement location="lib/jsyntaxpane.jar"/>
         <pathelement location="lib/swingx-all-1.6.4.jar"/>
         
-         <!-- 使用MspCLI类而导入的包 -->
+         <!-- //tete_begin  使用MspCLI类而导入的包 -->
         <pathelement location="apps/mspsim/lib/cooja_mspsim.jar"/>
         <pathelement location="apps/mspsim/lib/mspsim.jar"/>
         <pathelement location="apps/mspsim/lib/coffee.jar"/>
         <pathelement location="apps/mspsim/lib/jipv6.jar"/>
+        <!-- //tete_end -->
       </classpath>
     </javadoc>
   </target>
@@ -88,11 +89,12 @@ The COOJA Simulator
         <pathelement location="lib/jsyntaxpane.jar"/>
         <pathelement location="lib/swingx-all-1.6.4.jar"/>
 
-        <!-- 使用MspCLI类而导入的包 -->
+         <!-- //tete_begin  使用MspCLI类而导入的包 -->
         <pathelement location="apps/mspsim/lib/cooja_mspsim.jar"/>
         <pathelement location="apps/mspsim/lib/mspsim.jar"/>
         <pathelement location="apps/mspsim/lib/coffee.jar"/>
         <pathelement location="apps/mspsim/lib/jipv6.jar"/>
+        <!-- //tete_end -->
       </classpath>
     </javac>
   </target>
@@ -127,11 +129,12 @@ The COOJA Simulator
         <pathelement location="lib/jsyntaxpane.jar"/>
         <pathelement location="lib/swingx-all-1.6.4.jar"/>
 
-        <!-- 使用MspCLI类而导入的包 -->
+         <!-- //tete_begin  使用MspCLI类而导入的包 -->
         <pathelement location="apps/mspsim/lib/cooja_mspsim.jar"/>
         <pathelement location="apps/mspsim/lib/mspsim.jar"/>
         <pathelement location="apps/mspsim/lib/coffee.jar"/>
         <pathelement location="apps/mspsim/lib/jipv6.jar"/>
+        <!-- //tete_end -->
       </classpath>
     </java>
   </target>
@@ -149,11 +152,12 @@ The COOJA Simulator
         <pathelement location="lib/jsyntaxpane.jar"/>
         <pathelement location="lib/swingx-all-1.6.4.jar"/>
 
-         <!-- 使用MspCLI类而导入的包 -->
+          <!-- //tete_begin  使用MspCLI类而导入的包 -->
         <pathelement location="apps/mspsim/lib/cooja_mspsim.jar"/>
         <pathelement location="apps/mspsim/lib/mspsim.jar"/>
         <pathelement location="apps/mspsim/lib/coffee.jar"/>
         <pathelement location="apps/mspsim/lib/jipv6.jar"/>
+        <!-- //tete_end -->
       </classpath>
     </java>
   </target>
