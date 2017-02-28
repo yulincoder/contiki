@@ -1875,9 +1875,7 @@ public class Cooja extends Observable {
            if(flag_ScriptLaunchMspCLI){
         	// flag_ScriptLaunchMspCLI在本方法中还需使用一次,因此不在这里进行重置
 
-          System.out.println("Log: MspCLI 准备加载");
         	((MspCLI) plugin).flag_ScriptLaunchMspCLI = flag_ScriptLaunchMspCLI;
-          System.out.println("Log: MspCLI 加载成功");
            	System.out.println("Log1: " + plugin.getClass());
             ((MspCLI) plugin).execCmdFromScript(mspcilCommandFromScript);
            }
