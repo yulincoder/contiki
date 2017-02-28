@@ -39,6 +39,15 @@ import org.apache.log4j.Logger;
 
 import org.contikios.cooja.Simulation;
 
+
+//tete_begin
+import org.contikios.cooja.Mote;
+import java.util.Vector;
+import java.util.ArrayList;
+import org.contikios.cooja.mspmote.plugins.MspCLI;
+import org.contikios.cooja.Cooja;
+//tete_end
+
 public class ScriptParser {
   private static final long serialVersionUID = 1L;
   private static Logger logger = Logger.getLogger(ScriptParser.class);
@@ -48,7 +57,22 @@ public class ScriptParser {
 
   private String code = null;
 
+  //tete_begin
+    /**
+     * parse script to start up CLI.
+     */
+
+    static public Object pluginClasses = null;
+    static public Cooja cooja = null;
+    public ArrayList<MspCLI> mspclis = new ArrayList<MspCLI>();
+    private static Simulation simulation = null;
+  //tete_end
+
   public ScriptParser(String code) throws ScriptSyntaxErrorException {
+
+    //tete_begin
+    code = parseMspCLIWithAction(code);
+    //tete_end
 
     code = fixNewlines(code);
 
@@ -113,6 +137,66 @@ public class ScriptParser {
     return code;
   }
 
+//tete_begin
+// 从ScriptRuner获得simulation对象,可以从该对象获得所有仿真节点
+  public static void setSimulation(Simulation sim){
+      ScriptParser.simulation = sim;
+  }
+
+  private String parseMspCLIWithAction(String code) throws ScriptSyntaxErrorException{
+    // 用来存储多条指令
+    ArrayList<String[]> decr = new ArrayList<String[]>();
+
+    Pattern pattern = Pattern.compile("\\@MspCLI\\((.*?)\\)");
+    Matcher matcher = pattern.matcher(code);
+    int i = 0;
+    while(matcher.find()){
+       i++;
+       String[] tmp = matcher.group(1).split(",");
+       // 命令只有两个参数
+       if(tmp.length != 2)
+         throw new IllegalArgumentException("The " + i + "'th of @MspCLI(number, command) should have only two arguments.");
+       tmp[0] = tmp[0].trim();
+       tmp[1] = tmp[1].trim();
+       decr.add(tmp);
+    }
+    // 执行MspCLI
+    launchMspCLI(decr);
+    matcher.reset(code);
+    code = code.replaceAll("\\@MspCLI\\((.*?)\\)", ";");
+    return code;
+  }
+
+  private void launchMspCLI(ArrayList<String[]> cmd){
+	  int moteNum = 0;
+
+    if (cmd.size() == 0)
+      return;
+
+	  for (Object pluginClass: (Vector<Class<? extends Object>>)pluginClasses) {
+			Object o = (Object)pluginClass;
+
+			for(String[] str : cmd){
+				int index = 0;
+				for (Object mote: this.simulation.getMotes()) {
+          //判断是否为命令参数指定的节点
+					if(++index == Integer.parseInt(str[0]))
+						if("class org.contikios.cooja.mspmote.plugins.MspCLI".equals(o.toString())){
+							cooja.flag_ScriptLaunchMspCLI = true;
+
+              // 传递命令
+							cooja.mspcilCommandFromScript = str[1];
+							// 将启动的MspCLI对象装进ArryList是为了在停止脚本的时候关掉这些MspCLI
+							mspclis.add((MspCLI) cooja.tryStartPlugin((Object) pluginClass, cooja, cooja.getSimulation(), mote));
+							System.out.println("Start up " + str[0] + "'th and command is <" + str[1] + ">" );
+						}
+				}
+			}
+		}
+  }
+//tete_end
+
+
   private String parseTimeout(String code) throws ScriptSyntaxErrorException {
     Pattern pattern = Pattern.compile(
         "TIMEOUT\\(" +
@@ -131,11 +215,10 @@ public class ScriptParser {
 
     timeoutTime = Long.parseLong(matcher.group(1))*Simulation.MILLISECOND;
     timeoutCode = ";";
-
     matcher.reset(code);
     code = matcher.replaceFirst(";");
-
     matcher.reset(code);
+
     if (matcher.find()) {
       throw new ScriptSyntaxErrorException("Only one timeout handler allowed");
     }
@@ -153,20 +236,22 @@ public class ScriptParser {
     Matcher matcher = pattern.matcher(code);
 
     if (!matcher.find()) {
+System.out.println("code 0:" + code);
       return code;
     }
 
     if (timeoutTime > 0) {
       throw new ScriptSyntaxErrorException("Only one timeout handler allowed");
     }
-
+System.out.println("code 1:" + code);
     timeoutTime = Long.parseLong(matcher.group(1))*Simulation.MILLISECOND;
     timeoutCode = matcher.group(2);
-
+System.out.println("code 2:" + code);
     matcher.reset(code);
     code = matcher.replaceFirst(";");
-
+System.out.println("code 3:" + code);
     matcher.reset(code);
+System.out.println("code 4:" + code);
     if (matcher.find()) {
       throw new ScriptSyntaxErrorException("Only one timeout handler allowed");
     }
@@ -219,7 +304,7 @@ public class ScriptParser {
   public String getJSCode() {
     return getJSCode(code, timeoutCode);
   }
-    
+
   public static String getJSCode(String code, String timeoutCode) {
     return
     "timeout_function = null; " +
@@ -230,7 +315,7 @@ public class ScriptParser {
     "if (TIMEOUT) { SCRIPT_TIMEOUT(); } " +
     "msg = new java.lang.String(msg); " +
     "node.setMoteMsg(mote, msg); " +
-    code + 
+    code +
     "\n" +
     "\n" +
     "while (true) { SCRIPT_SWITCH(); } " /* SCRIPT ENDED */+

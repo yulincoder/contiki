@@ -137,6 +137,7 @@ import org.contikios.cooja.dialogs.MessageListUI;
 import org.contikios.cooja.dialogs.ProjectDirectoriesDialog;
 import org.contikios.cooja.plugins.MoteTypeInformation;
 import org.contikios.cooja.plugins.ScriptRunner;
+import org.contikios.cooja.plugins.ScriptParser;
 import org.contikios.cooja.plugins.SimControl;
 import org.contikios.cooja.plugins.SimInformation;
 import org.contikios.cooja.util.ExecuteJAR;
@@ -1052,8 +1053,8 @@ public class Cooja extends Observable {
            * 在这里这两个变量是有效的,而不是null.
            *    pluginClasses的作用不言而喻, 而cooja中可以获得仿真的mote以用来启动指定mote的CLI
            */
-          ScriptRunner.pluginClasses = (Object)pluginClasses;
-          ScriptRunner.cooja = cooja;
+          ScriptParser.pluginClasses = (Object)pluginClasses;
+          ScriptParser.cooja = cooja;
           //tete_end
           toolsMenu.add(createMotePluginsSubmenu(pluginClass));
         }

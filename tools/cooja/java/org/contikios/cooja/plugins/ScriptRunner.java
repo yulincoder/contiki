@@ -89,14 +89,7 @@ import org.contikios.cooja.dialogs.MessageList;
 import org.contikios.cooja.dialogs.MessageListUI;
 import org.contikios.cooja.util.StringUtils;
 
-//tete_begin
-import org.contikios.cooja.Mote;
-import java.util.Vector;
-import java.util.ArrayList;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import org.contikios.cooja.mspmote.plugins.MspCLI;
-//tete_end
+
 
 @ClassDescription("Simulation script editor")
 @PluginType(PluginType.SIM_CONTROL_PLUGIN)
@@ -111,86 +104,6 @@ public class ScriptRunner extends VisPlugin {
       DefaultSyntaxKit.initKit();
     }
   }
-
-//tete_begin
-  /**
-   * parse script to start up CLI.
-   */
-
-  static public Object pluginClasses = null;
-  static public Cooja cooja = null;
-  public ArrayList<MspCLI> mspclis = new ArrayList<MspCLI>();
-
-  /**
-   * 解析脚本
-   */
-  private ArrayList<String[]> parseScript(String codes){
-		ArrayList<String[]> decr = new ArrayList<String[]>();
-
-		//prase format "@MspCLI(number, command)"
-		Pattern pattern = Pattern.compile("\\@MspCLI\\((.*?)\\)");
-		Matcher matcher = pattern.matcher(codes);
-		int i = 0;
-		while(matcher.find()){
-			 i++;
-			 String[] tmp = matcher.group(1).split(",");
-			 // 命令只有两个参数
-			 if(tmp.length != 2)
-				 throw new IllegalArgumentException("The " + i + "'th of @MspCLI(number, command) should have only two arguments.");
-			 tmp[0] = tmp[0].trim();
-			 tmp[1] = tmp[1].trim();
-			 decr.add(tmp);
-		}
-		return decr;
-	}
-
-  public void launchScriptForCLI_plus(String scriptText){
-	  ArrayList<String[]> cmd = parseScript(scriptText);
-	  int moteNum = 0;
-
-	  if(pluginClasses == null){
-		  System.out.println("Log: pluginClasses is null.");
-		  return;
-	  }
-
-	  if(this.simulation == null){
-		  System.out.println("Log: this.simulation is null.");
-		  return;
-	  }
-
-	  if(cooja == null){
-		  System.out.println("Log: cooja is null.");
-		  return;
-	  }
-
-	  if(cooja.getSimulation() == null){
-		  System.out.println("Log: cooja.getSimulation() is null.");
-		  return;
-	  }
-
-	  for (Object pluginClass: (Vector<Class<? extends Object>>)pluginClasses) {
-			Object o = (Object)pluginClass;
-
-			for(String[] str : cmd){
-				int index = 0;
-				for (Object mote: this.simulation.getMotes()) {
-          //判断是否为命令参数指定的节点
-					if(++index == Integer.parseInt(str[0]))
-						if("class org.contikios.cooja.mspmote.plugins.MspCLI".equals(o.toString())){
-							cooja.flag_ScriptLaunchMspCLI = true;
-
-              // 传递命令
-							cooja.mspcilCommandFromScript = str[1];
-							// 将启动的MspCLI对象装进ArryList是为了在停止脚本的时候关掉这些MspCLI
-							mspclis.add((MspCLI) cooja.tryStartPlugin((Object) pluginClass, cooja, cooja.getSimulation(), mote));
-							System.out.println("Start up " + str[0] + "'th and command is <" + str[1] + ">" );
-						}
-				}
-			}
-		}
- }
-
-//tete_end
 
 
   final String[] EXAMPLE_SCRIPTS = new String[] {
@@ -218,6 +131,10 @@ public class ScriptRunner extends VisPlugin {
     super("Simulation script editor", gui, false);
 
     this.simulation = simulation;
+//tete_begin
+// simulatuib对象包含有所有仿真的节点mote, 传递给ScriptParser, ScriptParser可以启动指定节点的CLI.
+    ScriptParser.setSimulation(simulation);
+//tete_end
     this.engine = null;
 
     /* Menus */
@@ -279,18 +196,6 @@ public class ScriptRunner extends VisPlugin {
     activateMenuItem.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent ev) {
         try {
-    	//tete_begin
-        /* 解析Javascript脚本代码文本, 用来启动CLI */
-    	  if(!isActive())
-    		  launchScriptForCLI_plus(codeEditor.getText());
-    	  else{
-    		  // 遍历关掉MspCLI(最终我发现这样没有任何作用, 因为官方原来的MspCLI窗口即使关掉,已经执行的命令仍在执行)
-    		  for(MspCLI each: mspclis){
-    			  each.setClosable(true);
-    			  each.setClosed(true);
-    		  }
-    	  }
-    	//tete_end
           setScriptActive(!isActive());
         } catch (Exception e) {
           logger.fatal("Error: " + e.getMessage(), e);
