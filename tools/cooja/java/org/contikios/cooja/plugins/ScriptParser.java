@@ -70,15 +70,15 @@ public class ScriptParser {
 
   public ScriptParser(String code) throws ScriptSyntaxErrorException {
 
-    //tete_begin
-    code = parseMspCLIWithAction(code);
-    //tete_end
-
     code = fixNewlines(code);
 
     code = stripMultiLineComments(code);
 
     code = stripSingleLineComments(code);
+
+    //tete_begin
+    code = parseMspCLIWithAction(code);
+    //tete_end
 
     code = parseTimeout(code);
 
@@ -147,7 +147,7 @@ public class ScriptParser {
     // 用来存储多条指令
     ArrayList<String[]> decr = new ArrayList<String[]>();
 
-    Pattern pattern = Pattern.compile("\\@MspCLI\\((.*?)\\)");
+    Pattern pattern = Pattern.compile("MspCLI\\((.*?)\\)");
     Matcher matcher = pattern.matcher(code);
     int i = 0;
     while(matcher.find()){
@@ -163,7 +163,7 @@ public class ScriptParser {
     // 执行MspCLI
     launchMspCLI(decr);
     matcher.reset(code);
-    code = code.replaceAll("\\@MspCLI\\((.*?)\\)", ";");
+    code = code.replaceAll("MspCLI\\((.*?)\\)", ";");
     return code;
   }
 
@@ -236,22 +236,17 @@ public class ScriptParser {
     Matcher matcher = pattern.matcher(code);
 
     if (!matcher.find()) {
-System.out.println("code 0:" + code);
       return code;
     }
 
     if (timeoutTime > 0) {
       throw new ScriptSyntaxErrorException("Only one timeout handler allowed");
     }
-System.out.println("code 1:" + code);
     timeoutTime = Long.parseLong(matcher.group(1))*Simulation.MILLISECOND;
     timeoutCode = matcher.group(2);
-System.out.println("code 2:" + code);
     matcher.reset(code);
     code = matcher.replaceFirst(";");
-System.out.println("code 3:" + code);
     matcher.reset(code);
-System.out.println("code 4:" + code);
     if (matcher.find()) {
       throw new ScriptSyntaxErrorException("Only one timeout handler allowed");
     }
