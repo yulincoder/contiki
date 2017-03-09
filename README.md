@@ -1,11 +1,11 @@
 The Contiki Operating System  
 ============================
 
-***
 [![Build Status](https://travis-ci.org/contiki-os/contiki.svg?branch=master)](https://travis-ci.org/contiki-os/contiki/branches)
 
+***
 fork本仓库的唯一目的就是为Contiki提供的仿真工具[Cooja](https://github.com/yulincoder/contiki/tree/master/tools/cooja)添加几个微不足道的功能.
-  * 可以在Cooja脚本中执行MspCLI(num, command);函数启动指定节点的MspCLI并执行指定命令.
+  *  可以在Cooja脚本中执行MspCLI(num, command);函数启动指定节点的MspCLI并执行指定命令.
 ---
 存在问题:
   目前新git clone的Cooja不能够启动, 问题的原因是Cooja.java导入的类
