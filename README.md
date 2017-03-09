@@ -5,9 +5,10 @@ The Contiki Operating System
 
 ***
 fork本仓库的唯一目的就是为Contiki提供的仿真工具[Cooja](https://github.com/yulincoder/contiki/tree/master/tools/cooja)添加几个微不足道的功能.
-  *  可以在Cooja脚本中执行MspCLI(num, command);函数启动指定节点的MspCLI并执行指定命令.
+  + 可以在Cooja脚本中执行MspCLI(num, command);函数启动指定节点的MspCLI并执行指定命令.
 ---
-存在问题:
+存在问题:.
+
   目前新git clone的Cooja不能够启动, 问题的原因是Cooja.java导入的类
   org.contikios.cooja.mspmote.plugins.MspCLI 来自于apps/mspsim工程.
   而msp工程的build需要导入Cooja工程中的类,这样形成了交叉导入,导致Cooja无法build, mspsim
