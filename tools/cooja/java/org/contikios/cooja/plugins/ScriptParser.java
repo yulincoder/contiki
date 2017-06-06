@@ -39,10 +39,9 @@ import org.apache.log4j.Logger;
 
 import org.contikios.cooja.Simulation;
 
-
-//tete_begin
+// tete_begin
+import java.util.Random;
 import org.contikios.cooja.Mote;
-import java.util.Vector;
 import java.util.ArrayList;
 import org.contikios.cooja.mspmote.plugins.MspCLI;
 import org.contikios.cooja.Cooja;
@@ -62,6 +61,7 @@ public class ScriptParser {
      * parse script to start up CLI.
      */
 
+    static public MspCLI pluginClass = null;
     static public Object pluginClasses = null;
     static public Cooja cooja = null;
     public ArrayList<MspCLI> mspclis = new ArrayList<MspCLI>();
@@ -138,6 +138,7 @@ public class ScriptParser {
   }
 
 //tete_begin
+// part of MspCLI
 // 从ScriptRuner获得simulation对象,可以从该对象获得所有仿真节点
   public static void setSimulation(Simulation sim){
       ScriptParser.simulation = sim;
@@ -173,29 +174,112 @@ public class ScriptParser {
     if (cmd.size() == 0)
       return;
 
-	  for (Object pluginClass: (Vector<Class<? extends Object>>)pluginClasses) {
-			Object o = (Object)pluginClass;
 
-			for(String[] str : cmd){
-				int index = 0;
-				for (Object mote: this.simulation.getMotes()) {
-          //判断是否为命令参数指定的节点
-					if(++index == Integer.parseInt(str[0]))
-						if("class org.contikios.cooja.mspmote.plugins.MspCLI".equals(o.toString())){
-							cooja.flag_ScriptLaunchMspCLI = true;
+    for(String[] str : cmd){
+        int index = 0;
+        for (Object mote: this.simulation.getMotes()) {
+            //判断是否为命令参数指定的节点
+            if(++index == Integer.parseInt(str[0]))
+                //if("class org.contikios.cooja.mspmote.plugins.MspCLI".equals(o.toString())){
+                    cooja.flag_ScriptLaunchMspCLI = true;
 
-              // 传递命令
-							cooja.mspcilCommandFromScript = str[1];
-							// 将启动的MspCLI对象装进ArryList是为了在停止脚本的时候关掉这些MspCLI
-							mspclis.add((MspCLI) cooja.tryStartPlugin((Object) pluginClass, cooja, cooja.getSimulation(), mote));
-							System.out.println("Start up " + str[0] + "'th and command is <" + str[1] + ">" );
-						}
-				}
-			}
-		}
+                    // 传递命令
+                    cooja.mspcilCommandFromScript = str[1];
+                    // 将启动的MspCLI对象装进ArryList是为了在停止脚本的时候关掉这些MspCLI
+
+                    MspCLI tmp = new MspCLI((Mote) mote, cooja.getSimulation(), cooja, false);
+                    tmp.execCmdFromScript(str[1]);
+                    mspclis.add(tmp);
+                    //mspclis.add((MspCLI) cooja.tryStartPlugin((Object) pluginClass, cooja, cooja.getSimulation(), mote));
+                    System.out.println("Start up " + str[0] + "'th and command is <" + str[1] + ">" );
+            //	}
+        }
+    }
+
   }
 //tete_end
 
+//tete_begin
+// part of reverse function and kill function
+/*
+ *  递归的将代码中的随机函数替换为随机数
+ */
+  private static String replaceRandom(String code){
+    String randStrRegex = "rand\\s*?\\(([0-9\\s]+),([0-9\\s]+)\\)";
+    Pattern p = Pattern.compile(randStrRegex);
+    Matcher m = p.matcher(code);
+    if(m.find())
+      code =  code.replaceFirst(
+              randStrRegex,
+              // 获得代码中随机函数参数，并生成随机数
+              rand(Integer.parseInt(m.group(1).trim()), Integer.parseInt(m.group(2).trim()))+"");
+    System.out.println("Log: " + code);
+    Pattern pattern = Pattern.compile(randStrRegex);
+    Matcher match = pattern.matcher(code);
+    if(match.find())
+      code = replaceRandom(code);
+    return code;
+  }
+
+  /**
+  * 解析reverse函数
+  * reverse函数执行翻转节点状态的功能
+  * @param code
+  * @param storage        每个节点的节点编号和执行翻转动作的时间组成长度为2的节点信息数组，将
+  *                       所有节点的信息数组存储进storage。
+  * @return 去掉reverse函数之后的代码
+  */
+ private static String parseReverse(String code, ArrayList<String[]> storage){
+
+     code = replaceRandom(code);
+     String regex = "reverse\\s*?\\(([0-9\\s]+),([0-9\\s]+)\\)";
+     Pattern pattern = Pattern.compile(regex);
+     Matcher match = pattern.matcher(code);
+
+     while(match.find()){
+//                        有时间给这些println函数都弄成日志输出
+//                        System.out.println(match.group(1) + ": " + match.group(2));
+             storage.add(new String[]{match.group(1),  match.group(2)});
+     }
+
+     return code.replaceAll(regex, ";");
+ }
+
+ /**
+  * 解析kill节点函数(解析起来和reverse一毛一样)
+  * kill函数杀死节点
+  * @param code
+  * @param storage        每个节点的节点编号和执行死亡动作的时间组成长度为2的节点信息数组，将
+  *                                         所有节点的信息数组存储进storage。
+  * @return 去掉kill函数之后的代码
+  */
+ private static String parseKill(String code, ArrayList<String[]> storage){
+
+     code = replaceRandom(code);
+     String regex = "kill\\s*?\\(([0-9\\s]+),([0-9\\s]+)\\)";
+     Pattern pattern = Pattern.compile(regex);
+     Matcher match = pattern.matcher(code);
+
+     while(match.find()){
+//                        有时间给这些println函数都弄成日志输出
+//                        System.out.println(match.group(1) + ": " + match.group(2));
+      storage.add(new String[]{match.group(1),  match.group(2)});
+     }
+
+     return code.replaceAll(regex, ";");
+ }
+
+
+ /**
+  * 获得随机数
+  * @param min
+  * @param max
+  * @return [min, max)范围内的随机数
+  */
+ private static int rand(int min, int max){
+         return new Random().nextInt(max)%(max-min) + min;
+ }
+// tete_end
 
   private String parseTimeout(String code) throws ScriptSyntaxErrorException {
     Pattern pattern = Pattern.compile(

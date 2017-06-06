@@ -102,7 +102,7 @@ public class LogScriptEngine {
   private long nextProgress;
 
   private int exitCode = 0;
-  
+
   public LogScriptEngine(Simulation simulation) {
     this.simulation = simulation;
   }

@@ -80,6 +80,119 @@ public class MspCLI extends VisPlugin implements MotePlugin, HasQuickHelp {
   public static boolean flag_ScriptLaunchMspCLI = false;
   //tete_end
 
+  //tete_begin
+  /* 重写一个无界面的构造函数 */
+  public MspCLI(Mote mote, Simulation simulationToVisualize, Cooja gui, boolean requiresVis) {
+      super("Simulation script editor", gui, false);
+
+      this.mspMote = (MspMote) mote;
+
+      final Container panel = null;
+
+      logArea = null;
+
+
+      final CommandContext commandContext = new CommandContext(mspMote.getCLICommandHandler(), null, "", new String[0], 1, null);
+
+      //tete_begin
+      this.globalCommandContext = commandContext;
+      this.globalPanel = panel;
+      //tete_end
+
+
+      JPopupMenu popupMenu = null;
+
+
+
+      ActionListener action = new ActionListener() {
+          public void actionPerformed(ActionEvent e) {
+              String command = trim(commandField.getText());
+              if (command != null) {
+                  try {
+                      int previous = historyCount - 1;
+                      if (previous < 0) {
+                          previous += history.length;
+                      }
+                      if (!command.equals(history[previous])) {
+                          history[historyCount] = command;
+                          historyCount = (historyCount + 1) % history.length;
+                      }
+                      historyPos = historyCount;
+                      addCLIData("> " + command);
+
+                      mspMote.executeCLICommand(command, commandContext);
+                      commandField.setText("");
+                  } catch (Exception ex) {
+                      System.err.println("could not send '" + command + "':");
+                      ex.printStackTrace();
+                      JOptionPane.showMessageDialog(panel,
+                              "could not send '" + command + "':\n"
+                                      + ex, "ERROR",
+                              JOptionPane.ERROR_MESSAGE);
+                  }
+              } else {
+                  commandField.getToolkit().beep();
+              }
+          }
+
+      };
+      commandField = new JTextField();
+      commandField.addActionListener(action);
+      commandField.addKeyListener(new KeyAdapter() {
+
+          @Override
+          public void keyPressed(KeyEvent e) {
+              switch (e.getKeyCode()) {
+                  case KeyEvent.VK_UP: {
+                      int nextPos = (historyPos + history.length - 1) % history.length;
+                      if (nextPos == historyCount || history[nextPos] == null) {
+                          commandField.getToolkit().beep();
+                      } else {
+                          String cmd = trim(commandField.getText());
+                          if (cmd != null) {
+                              history[historyPos] = cmd;
+                          }
+                          historyPos = nextPos;
+                          commandField.setText(history[historyPos]);
+                      }
+                      break;
+                  }
+                  case KeyEvent.VK_DOWN: {
+                      int nextPos = (historyPos + 1) % history.length;
+                      if (nextPos == historyCount) {
+                          historyPos = nextPos;
+                          commandField.setText("");
+                      } else if (historyPos == historyCount || history[nextPos] == null) {
+                          commandField.getToolkit().beep();
+                      } else {
+                          String cmd = trim(commandField.getText());
+                          if (cmd != null) {
+                              history[historyPos] = cmd;
+                          }
+                          historyPos = nextPos;
+                          commandField.setText(history[historyPos]);
+                      }
+                      break;
+                  }
+              }
+          }
+
+      });
+
+      cliResponseAggregator.start();
+
+      setSize(500,500);
+  }
+
+  public MspCLI(Cooja gui){
+      super("Simulation script editor", gui, false);
+  }
+
+  public void setMote(Mote mote){
+      this.mspMote = (MspMote) mote;
+  }
+
+  //tete_end
   public MspCLI(Mote mote, Simulation simulationToVisualize, Cooja gui) {
     super("Msp CLI (" + mote.getID() + ')', gui);
     
@@ -201,12 +314,6 @@ public class MspCLI extends VisPlugin implements MotePlugin, HasQuickHelp {
     
     setSize(500,500);
   }
-
-  //tete_begin
-  public void sayHi(){
-	  System.out.println("Log2: Hi, I am here.");
-  }
-  //tete_end
   
 //tete_begin
   public void execCmdFromScript(String cmd){
@@ -261,8 +368,17 @@ public class MspCLI extends VisPlugin implements MotePlugin, HasQuickHelp {
         sb.append(l);
         sb.append('\n');
       }
+      // + tete_begin
+      if (logArea != null){
+          logArea.setText(sb.toString());
+          logArea.setCaretPosition(sb.length());
+      }
+      //tete_end
+
+      /* - 原来代码
       logArea.setText(sb.toString());
       logArea.setCaretPosition(sb.length());
+      */
     }
   };
 

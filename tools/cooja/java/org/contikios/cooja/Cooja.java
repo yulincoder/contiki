@@ -118,6 +118,7 @@ import javax.swing.filechooser.FileFilter;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.log4j.xml.DOMConfigurator;
+import org.contikios.cooja.mspmote.MspMote;
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.JDOMException;
@@ -159,6 +160,7 @@ import org.contikios.cooja.mspmote.plugins.MspCLI;
  * @author Fredrik Osterlind
  */
 public class Cooja extends Observable {
+
   private static JFrame frame = null;
   private static JApplet applet = null;
   private static final long serialVersionUID = 1L;
@@ -1336,6 +1338,10 @@ public class Cooja extends Observable {
       frame = new JFrame(WINDOW_TITLE);
     }
     Cooja gui = new Cooja(desktop);
+    //tete_begin
+    ScriptParser.cooja = gui;
+
+//tete_end
     if (vis) {
       configureFrame(gui, false);
     }
@@ -1588,7 +1594,7 @@ public class Cooja extends Observable {
     if (pluginClassNames != null) {
       for (String pluginClassName : pluginClassNames) {
         Class<? extends Plugin> pluginClass = tryLoadClass(this, Plugin.class,
-            pluginClassName);
+                pluginClassName);
 
         if (pluginClass != null) {
           registerPlugin(pluginClass);
@@ -1868,8 +1874,8 @@ public class Cooja extends Observable {
         }
 
         plugin =
-          pluginClass.getConstructor(new Class[] { Mote.class, Simulation.class, Cooja.class })
-          .newInstance(argMote, argSimulation, argGUI);
+          pluginClass.getConstructor(new Class[]{Mote.class, Simulation.class, Cooja.class})
+                  .newInstance(argMote, argSimulation, argGUI);
 
         //tete_begin
         if("class org.contikios.cooja.mspmote.plugins.MspCLI".equals(plugin.getClass().toString())){
@@ -1878,7 +1884,7 @@ public class Cooja extends Observable {
 
         	((MspCLI) plugin).flag_ScriptLaunchMspCLI = flag_ScriptLaunchMspCLI;
            	System.out.println("Log1: " + plugin.getClass());
-            ((MspCLI) plugin).execCmdFromScript(mspcilCommandFromScript);
+             ((MspCLI) plugin).execCmdFromScript(mspcilCommandFromScript);
            }
         }
         //tete_end
@@ -3292,6 +3298,8 @@ public class Cooja extends Observable {
       /* Load simulation */
       String config = args[0].substring("-nogui=".length());
       File configFile = new File(config);
+
+
       Simulation sim = quickStartSimulationConfig(configFile, false, randomSeed);
       if (sim == null) {
         System.exit(1);
@@ -3307,14 +3315,17 @@ public class Cooja extends Observable {
     	}
       }
 
+
       /* Backwards compatibility:
        * simulation has no control plugin, but has external (old style) test script.
        * We will manually start a test editor from here. */
       if (!hasController) {
         File scriptFile = new File(config.substring(0, config.length()-4) + ".js");
+
         if (scriptFile.exists()) {
           logger.info("Detected old simulation test, starting test editor manually from: " + scriptFile);
           ScriptRunner plugin = (ScriptRunner) gui.tryStartPlugin(ScriptRunner.class, gui, sim, null);
+
           if (plugin == null) {
             System.exit(1);
           }
@@ -3517,7 +3528,7 @@ public class Cooja extends Observable {
    * Saves current simulation configuration to given file and notifies
    * observers.
    *
-   * @see #loadSimulationConfig(File, boolean)
+   * @see /loadSimulationConfig(File, boolean)
    * @param file
    *          File to write
    */
