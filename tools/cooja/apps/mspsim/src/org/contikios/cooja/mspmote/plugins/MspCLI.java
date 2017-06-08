@@ -184,28 +184,22 @@ public class MspCLI extends VisPlugin implements MotePlugin, HasQuickHelp {
       setSize(500,500);
   }
 
-  public MspCLI(Cooja gui){
-      super("Simulation script editor", gui, false);
-  }
 
-  public void setMote(Mote mote){
-      this.mspMote = (MspMote) mote;
-  }
 
   //tete_end
   public MspCLI(Mote mote, Simulation simulationToVisualize, Cooja gui) {
     super("Msp CLI (" + mote.getID() + ')', gui);
-    
+
     this.mspMote = (MspMote) mote;
 
     final Container panel = getContentPane();
-    
+
     logArea = new JTextArea(4, 20);
     logArea.setTabSize(8);
     logArea.setEditable(false);
     panel.add(new JScrollPane(logArea), BorderLayout.CENTER);
 
-    
+
     LineListener lineListener = new LineListener() {
       public void lineRead(String line) {
         addCLIData(line);
@@ -213,12 +207,12 @@ public class MspCLI extends VisPlugin implements MotePlugin, HasQuickHelp {
     };
     PrintStream po = new PrintStream(new LineOutputStream(lineListener));
     final CommandContext commandContext = new CommandContext(mspMote.getCLICommandHandler(), null, "", new String[0], 1, null);
-    
+
     //tete_begin
     this.globalCommandContext = commandContext;
     this.globalPanel = panel;
     //tete_end
-    
+
     commandContext.out = po;
     commandContext.err = po;
 
@@ -231,7 +225,7 @@ public class MspCLI extends VisPlugin implements MotePlugin, HasQuickHelp {
     });
     popupMenu.add(clearItem);
     logArea.setComponentPopupMenu(popupMenu);
-  
+
 
     ActionListener action = new ActionListener() {
       public void actionPerformed(ActionEvent e) {
@@ -311,10 +305,10 @@ public class MspCLI extends VisPlugin implements MotePlugin, HasQuickHelp {
     cliResponseAggregator.start();
 
     panel.add(commandField, BorderLayout.SOUTH);
-    
+
     setSize(500,500);
   }
-  
+
 //tete_begin
   public void execCmdFromScript(String cmd){
   	 String command = trim(cmd);
