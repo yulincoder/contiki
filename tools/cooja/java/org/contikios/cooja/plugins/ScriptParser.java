@@ -41,11 +41,9 @@ import org.contikios.cooja.Simulation;
 
 // tete_begin
 import java.util.Random;
-import org.contikios.cooja.Mote;
 import java.util.ArrayList;
 
 import org.contikios.cooja.mspmote.MspMote;
-import org.contikios.cooja.mspmote.plugins.MspCLI;
 import org.contikios.cooja.Cooja;
 //tete_end
 
@@ -62,11 +60,8 @@ public class ScriptParser {
     /**
      * parse script to start up CLI.
      */
-
-    static public MspCLI pluginClass = null;
     static public Object pluginClasses = null;
     static public Cooja cooja = null;
-    public ArrayList<MspCLI> mspclis = new ArrayList<MspCLI>();
     private static Simulation simulation = null;
   //tete_end
 
@@ -181,7 +176,13 @@ public class ScriptParser {
     for(String[] str : cmd){
         int index = 0;
         for (Object mote: this.simulation.getMotes()) {
-            //判断是否为命令参数指定的节点
+
+            /*
+            判断是否为命令参数指定的节点
+            这里的逻辑其实有些多余, 之前这样来判断是否为指定节点是因为使用了
+            MspCLI类,这个类需要传入mote参数,getMotes()返回的节点按编号存储
+            但是现在已经改为使用mote自带的CLI,因此,每个mote的CLI就是它自己的
+             */
             if(++index == Integer.parseInt(str[0])) {
                 ((MspMote)mote).executeCLICommand(str[1]);
                 System.out.println("Start up " + str[0] + "'th and command is <" + str[1] + ">");
