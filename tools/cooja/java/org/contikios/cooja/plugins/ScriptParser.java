@@ -43,6 +43,8 @@ import org.contikios.cooja.Simulation;
 import java.util.Random;
 import org.contikios.cooja.Mote;
 import java.util.ArrayList;
+
+import org.contikios.cooja.mspmote.MspMote;
 import org.contikios.cooja.mspmote.plugins.MspCLI;
 import org.contikios.cooja.Cooja;
 //tete_end
@@ -77,6 +79,7 @@ public class ScriptParser {
     code = stripSingleLineComments(code);
 
     //tete_begin
+    code = replaceRandom(code);
     code = parseMspCLIWithAction(code);
     //tete_end
 
@@ -179,20 +182,10 @@ public class ScriptParser {
         int index = 0;
         for (Object mote: this.simulation.getMotes()) {
             //判断是否为命令参数指定的节点
-            if(++index == Integer.parseInt(str[0]))
-                //if("class org.contikios.cooja.mspmote.plugins.MspCLI".equals(o.toString())){
-                    cooja.flag_ScriptLaunchMspCLI = true;
-
-                    // 传递命令
-                    cooja.mspcilCommandFromScript = str[1];
-                    // 将启动的MspCLI对象装进ArryList是为了在停止脚本的时候关掉这些MspCLI
-
-                    MspCLI tmp = new MspCLI((Mote) mote, cooja.getSimulation(), cooja, false);
-                    tmp.execCmdFromScript(str[1]);
-                    mspclis.add(tmp);
-                    //mspclis.add((MspCLI) cooja.tryStartPlugin((Object) pluginClass, cooja, cooja.getSimulation(), mote));
-                    System.out.println("Start up " + str[0] + "'th and command is <" + str[1] + ">" );
-            //	}
+            if(++index == Integer.parseInt(str[0])) {
+                ((MspMote)mote).executeCLICommand(str[1]);
+                System.out.println("Start up " + str[0] + "'th and command is <" + str[1] + ">");
+            }
         }
     }
 
@@ -213,7 +206,7 @@ public class ScriptParser {
               randStrRegex,
               // 获得代码中随机函数参数，并生成随机数
               rand(Integer.parseInt(m.group(1).trim()), Integer.parseInt(m.group(2).trim()))+"");
-    System.out.println("Log: " + code);
+    //System.out.println("Log: " + code);
     Pattern pattern = Pattern.compile(randStrRegex);
     Matcher match = pattern.matcher(code);
     if(match.find())

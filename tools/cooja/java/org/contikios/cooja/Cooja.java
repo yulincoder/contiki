@@ -144,10 +144,6 @@ import org.contikios.cooja.plugins.SimInformation;
 import org.contikios.cooja.util.ExecuteJAR;
 import org.contikios.cooja.util.ScnObservable;
 
-//tete_begin
-import org.contikios.cooja.mspmote.plugins.MspCLI;
-//tete_end
-
 /**
  * Main file of COOJA Simulator. Typically contains a visualizer for the
  * simulator, but can also be started without visualizer.
@@ -166,11 +162,6 @@ public class Cooja extends Observable {
   private static final long serialVersionUID = 1L;
   private static Logger logger = Logger.getLogger(Cooja.class);
 
-  //tete_begin
-  // 如果该标志为true,说明从脚本来启动MspCLI
-  public static boolean flag_ScriptLaunchMspCLI = false;
-  public static String mspcilCommandFromScript = null;
-  //tete_end
   /**
    * External tools configuration.
    */
@@ -1855,15 +1846,10 @@ public class Cooja extends Observable {
 
     try {
       if (pluginType == PluginType.MOTE_PLUGIN) {
-    	//tete_begin
-    	  if(!flag_ScriptLaunchMspCLI && argGUI == null){
-    		  throw new PluginConstructionException("No GUI argument for mote plugin");
-    	  }
 
-// 原来的代码
-//        if (argGUI == null) {
-//          throw new PluginConstructionException("No GUI argument for mote plugin");
-//        }
+        if (argGUI == null) {
+          throw new PluginConstructionException("No GUI argument for mote plugin");
+        }
     	//tete_end
 
         if (argSimulation == null) {
@@ -1876,18 +1862,6 @@ public class Cooja extends Observable {
         plugin =
           pluginClass.getConstructor(new Class[]{Mote.class, Simulation.class, Cooja.class})
                   .newInstance(argMote, argSimulation, argGUI);
-
-        //tete_begin
-        if("class org.contikios.cooja.mspmote.plugins.MspCLI".equals(plugin.getClass().toString())){
-           if(flag_ScriptLaunchMspCLI){
-        	// flag_ScriptLaunchMspCLI在本方法中还需使用一次,因此不在这里进行重置
-
-        	((MspCLI) plugin).flag_ScriptLaunchMspCLI = flag_ScriptLaunchMspCLI;
-           	System.out.println("Log1: " + plugin.getClass());
-             ((MspCLI) plugin).execCmdFromScript(mspcilCommandFromScript);
-           }
-        }
-        //tete_end
 
       } else if (pluginType == PluginType.SIM_PLUGIN || pluginType == PluginType.SIM_STANDARD_PLUGIN
     		  || pluginType == PluginType.SIM_CONTROL_PLUGIN) {
@@ -1933,26 +1907,10 @@ public class Cooja extends Observable {
     startedPlugins.add(plugin);
     updateGUIComponentState();
 
-
-    //tete_begin
-//  修改后的代码
-    System.out.println("Log: " + plugin.getClass().toString() + " --- " + flag_ScriptLaunchMspCLI);
-    if (activate && plugin.getCooja() != null) {
-    	if("class org.contikios.cooja.mspmote.plugins.MspCLI".equals(plugin.getClass().toString())
-    			&& flag_ScriptLaunchMspCLI)
-    		flag_ScriptLaunchMspCLI = false;
-    	else
-    		cooja.showPlugin(plugin);
-    }
-
-
-//原代码
     // Show plugin if visualizer type
-//    if (activate && plugin.getCooja() != null) {
-//      cooja.showPlugin(plugin);
-//    }
-
-    //tete_end
+    if (activate && plugin.getCooja() != null) {
+      cooja.showPlugin(plugin);
+    }
 
     return plugin;
   }
