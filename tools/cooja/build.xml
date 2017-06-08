@@ -240,6 +240,11 @@ The COOJA Simulator
         <pathelement location="lib/jdom.jar"/>
         <pathelement location="lib/log4j.jar"/>
         <pathelement location="lib/jsyntaxpane.jar"/>
+
+        <pathelement location="apps/mspsim/lib/cooja_mspsim.jar"/>
+        <pathelement location="apps/mspsim/lib/mspsim.jar"/>
+        <pathelement location="apps/mspsim/lib/coffee.jar"/>
+        <pathelement location="apps/mspsim/lib/jipv6.jar"/>
       </classpath>
     </java>
   </target>
