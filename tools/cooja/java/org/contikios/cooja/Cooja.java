@@ -1040,15 +1040,7 @@ public class Cooja extends Observable {
             hasSimPlugins = false;
             toolsMenu.addSeparator();
           }
-        //tete_begin
-          /*
-           *   之所以在这里将pluginClasses与cooja传递给ScriptRunner是因为我只能确保
-           * 在这里这两个变量是有效的,而不是null.
-           *    pluginClasses的作用不言而喻, 而cooja中可以获得仿真的mote以用来启动指定mote的CLI
-           */
-          ScriptParser.pluginClasses = (Object)pluginClasses;
-          ScriptParser.cooja = cooja;
-          //tete_end
+
           toolsMenu.add(createMotePluginsSubmenu(pluginClass));
         }
       }
@@ -1807,6 +1799,7 @@ public class Cooja extends Observable {
   //tete_begin
   //这个函数我只改变了参数的类型(改为Object), 并且原来的类型我忘了.
   //这是一个历史遗留问题,由于我一开始类路径设置错误给逼的.
+  //2017.06.08恰巧高考之后,这个方法就不再被使用,废物
   public Plugin tryStartPlugin(Object pluginClass,
 	      final Cooja argGUI, final Simulation argSimulation, final Object argMote) {
 	    return tryStartPlugin((Class<? extends Plugin>)pluginClass, argGUI, argSimulation, (Mote)argMote, true);
